@@ -116,10 +116,10 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	if referrer != "" {
 		if referrerURL, err := url.Parse(referrer); err == nil {
 			// Browser dialer cannot control the host part of referrer header, so only check the query
-			paddingLength = len(referrerURL.Query().Get("x_padding"))
+			paddingLength = len(referrerURL.Query().Get(h.config.GetPaddingField()))
 		}
 	} else {
-		paddingLength = len(request.URL.Query().Get("x_padding"))
+		paddingLength = len(request.URL.Query().Get(h.config.GetPaddingField()))
 	}
 
 	if int32(paddingLength) < validRange.From || int32(paddingLength) > validRange.To {

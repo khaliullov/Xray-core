@@ -235,6 +235,9 @@ type SplitHTTPConfig struct {
 	Xmux                 XmuxConfig        `json:"xmux"`
 	DownloadSettings     *StreamConfig     `json:"downloadSettings"`
 	Extra                json.RawMessage   `json:"extra"`
+	XPaddingField        string            `json:"xPaddingField"`
+	XPaddingFiller       string            `json:"xPaddingFiller"`
+	SessionNaming        string            `json:"sessionNaming"`
 }
 
 type XmuxConfig struct {
@@ -260,9 +263,15 @@ func (c *SplitHTTPConfig) Build() (proto.Message, error) {
 		if err := json.Unmarshal(c.Extra, &extra); err != nil {
 			return nil, errors.New(`Failed to unmarshal "extra".`).Base(err)
 		}
-		extra.Host = c.Host
-		extra.Path = c.Path
-		extra.Mode = c.Mode
+		if c.Host != "" {
+			extra.Host = c.Host
+		}
+		if c.Path != "" {
+			extra.Path = c.Path
+		}
+		if c.Mode != "" {
+			extra.Mode = c.Mode
+		}
 		c = &extra
 	}
 
@@ -281,6 +290,15 @@ func (c *SplitHTTPConfig) Build() (proto.Message, error) {
 		}
 	}
 
+	if c.XPaddingField == "" {
+		c.XPaddingField = splithttp.DefaultPaddingField
+	}
+	if c.XPaddingFiller == "" {
+		c.XPaddingFiller = "default"
+	}
+	if c.SessionNaming == "" {
+		c.SessionNaming = "uuid"
+	}
 	if c.XPaddingBytes != (Int32Range{}) && (c.XPaddingBytes.From <= 0 || c.XPaddingBytes.To <= 0) {
 		return nil, errors.New("xPaddingBytes cannot be disabled")
 	}
@@ -317,6 +335,9 @@ func (c *SplitHTTPConfig) Build() (proto.Message, error) {
 			HMaxReusableSecs: newRangeConfig(c.Xmux.HMaxReusableSecs),
 			HKeepAlivePeriod: c.Xmux.HKeepAlivePeriod,
 		},
+		XPaddingField:  c.XPaddingField,
+		XPaddingFiller: c.XPaddingFiller,
+		SessionNaming:  c.SessionNaming,
 	}
 
 	if c.DownloadSettings != nil {

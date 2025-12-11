@@ -2,7 +2,9 @@ package splithttp
 
 import (
 	"context"
+	"crypto/rand"
 	gotls "crypto/tls"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -244,6 +246,17 @@ func init() {
 	common.Must(internet.RegisterTransportDialer(protocolName, Dial))
 }
 
+func generateSession(transportConfiguration *Config) string {
+	if transportConfiguration.GetSessionNaming() == "random" {
+		b := make([]byte, 16)
+		_, _ = rand.Read(b)
+		token := base64.RawURLEncoding.EncodeToString(b)
+		return token
+	}
+	_uuid := uuid.New()
+	return _uuid.String()
+}
+
 func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (stat.Connection, error) {
 	tlsConfig := tls.ConfigFromStreamSettings(streamSettings)
 	realityConfig := reality.ConfigFromStreamSettings(streamSettings)
@@ -272,8 +285,9 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
 		requestURL.Host = dest.Address.String()
 	}
 
-	sessionIdUuid := uuid.New()
-	requestURL.Path = transportConfiguration.GetNormalizedPath() + sessionIdUuid.String()
+	sessionId := generateSession(transportConfiguration)
+
+	requestURL.Path = transportConfiguration.GetNormalizedPath() + sessionId
 	requestURL.RawQuery = transportConfiguration.GetNormalizedQuery()
 
 	httpClient, xmuxClient := getHTTPClient(ctx, dest, streamSettings)
@@ -327,7 +341,7 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
 		if requestURL2.Host == "" {
 			requestURL2.Host = dest2.Address.String()
 		}
-		requestURL2.Path = config2.GetNormalizedPath() + sessionIdUuid.String()
+		requestURL2.Path = config2.GetNormalizedPath() + sessionId
 		requestURL2.RawQuery = config2.GetNormalizedQuery()
 		httpClient2, xmuxClient2 = getHTTPClient(ctx, dest2, memory2)
 		errors.LogInfo(ctx, fmt.Sprintf("XHTTP is downloading from %s, mode %s, HTTP version %s, host %s", dest2, "stream-down", httpVersion2, requestURL2.Host))
