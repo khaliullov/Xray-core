@@ -56,11 +56,11 @@ func (c *DefaultDialerClient) OpenStream(ctx context.Context, url string, body i
 
 	method := "GET" // stream-down
 	if body != nil {
-		method = "POST" // stream-up/one
+		method = "PUT" // stream-up/one
 	}
 	req, _ := http.NewRequestWithContext(context.WithoutCancel(ctx), method, url, body)
 	req.Header = c.transportConfig.GetRequestHeader(url)
-	if method == "POST" && !c.transportConfig.NoGRPCHeader {
+	if method == "PUT" && !c.transportConfig.NoGRPCHeader {
 		req.Header.Set("Content-Type", "application/grpc")
 	}
 
@@ -93,7 +93,7 @@ func (c *DefaultDialerClient) OpenStream(ctx context.Context, url string, body i
 }
 
 func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, body io.Reader, contentLength int64) error {
-	req, err := http.NewRequestWithContext(context.WithoutCancel(ctx), "POST", url, body)
+	req, err := http.NewRequestWithContext(context.WithoutCancel(ctx), "PUT", url, body)
 	if err != nil {
 		return err
 	}
